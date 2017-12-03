@@ -116,8 +116,7 @@ calculate_2 list =
             |> List.filterMap (\i -> Array.get i array |> Maybe.map (\v -> Debug.log "item" ( i, v )))
             |> List.filterMap
                 (\( i, v1 ) ->
-                    i
-                        + delta
+                    (i + delta)
                         |> index
                         |> (\i -> Array.get i array)
                         |> Maybe.andThen

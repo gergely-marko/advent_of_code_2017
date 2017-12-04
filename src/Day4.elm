@@ -24,21 +24,12 @@ is_line_valid : String -> Bool
 is_line_valid line =
     line
         |> String.split " "
-        |> is_valid_2
+        |> is_valid
 
 
 is_valid : List String -> Bool
 is_valid words =
-    words
-        |> List.filter
-            (\word ->
-                words
-                    |> List.filter (\w -> w == word)
-                    |> List.length
-                    |> (==) 1
-            )
-        |> List.length
-        |> (\l -> l == List.length words)
+    iterate Set.empty words
 
 
 is_valid_2 : List String -> Bool

@@ -10,13 +10,15 @@ main : Html.Html msg
 main =
     let
         programs =
-            get_programs test_input
+            get_programs input
 
         root =
             get_root programs
     in
         root
-            |> Maybe.map (\r -> sum_weight r programs |> toString)
+            -- |> Maybe.map (\r -> sum_weight r programs |> toString)
+            |> Maybe.map (correct_weight programs)
+            |> Maybe.map toString
             |> Maybe.withDefault "not found"
             |> Html.text
 
@@ -28,9 +30,61 @@ type alias Program =
     }
 
 
+correct_weight : Dict String Program -> Program -> Int
+correct_weight collection root =
+    let
+        children =
+            List.filterMap (\child_name -> Dict.get child_name collection) root.programs
 
--- correct_weight : Program -> Dict String Program -> Int
--- correct_weight root collection =
+        children_weights =
+            List.map (\child -> sum_weight child collection) children
+    in
+        children
+            |> find (\child -> not (is_balanced child collection))
+            |> (\m_child ->
+                    case m_child of
+                        Nothing ->
+                            log_results collection root
+
+                        Just child ->
+                            correct_weight collection child
+               )
+
+
+log_results : Dict String Program -> Program -> Int
+log_results collection root =
+    let
+        children =
+            List.filterMap (\child_name -> Dict.get child_name collection) root.programs
+
+        children_sum_weights =
+            List.map (\child -> sum_weight child collection) children
+
+        children_weights =
+            List.map .weight children
+
+        d_root =
+            Debug.log "root" root
+
+        d_children_weights =
+            Debug.log "children_weights" children_weights
+
+        d_children_sum_weights =
+            Debug.log "children_sum_weights" children_sum_weights
+    in
+        -1
+
+
+is_balanced : Program -> Dict String Program -> Bool
+is_balanced root collection =
+    let
+        children =
+            List.filterMap (\child_name -> Dict.get child_name collection) root.programs
+
+        children_weights =
+            List.map (\child -> sum_weight child collection) children
+    in
+        are_equal children_weights
 
 
 are_equal : List Int -> Bool

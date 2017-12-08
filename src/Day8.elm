@@ -8,7 +8,7 @@ main : Html.Html msg
 main =
     let
         result =
-            execute instructions
+            run input
 
         max_value =
             result
@@ -37,48 +37,50 @@ type alias Instruction =
     }
 
 
-execute : List Instruction -> ( Dict String Int, Int )
-execute instructions =
-    instructions
-        |> List.foldl
-            (\i ( registers, max_value ) ->
-                let
-                    target_value =
-                        registers
-                            |> Dict.get i.target_register
-                            |> Maybe.withDefault 0
-
-                    condition_value =
-                        registers
-                            |> Dict.get i.condition_register
-                            |> Maybe.withDefault 0
-
-                    new_value =
-                        if i.condition condition_value then
-                            i.execute target_value
-                        else
-                            target_value
-
-                    new_max =
-                        Basics.max max_value new_value
-                in
-                    registers
-                        |> Dict.insert i.target_register new_value
-                        |> (\r -> ( r, new_max ))
-            )
-            ( Dict.empty, 0 )
-
-
-instructions : List Instruction
-instructions =
+run : String -> ( Dict String Int, Int )
+run input =
     input
         |> String.lines
         |> List.filter (\l -> String.length l > 0)
-        |> List.map create_instruction
+        |> List.foldl execute ( Dict.empty, 0 )
 
 
-create_instruction : String -> Instruction
-create_instruction line =
+execute : String -> ( Dict String Int, Int ) -> ( Dict String Int, Int )
+execute instruction args =
+    instruction
+        |> parse_instruction
+        |> execute_instruction args
+
+
+execute_instruction : ( Dict String Int, Int ) -> Instruction -> ( Dict String Int, Int )
+execute_instruction ( registers, max_value ) instruction =
+    let
+        target_value =
+            registers
+                |> Dict.get instruction.target_register
+                |> Maybe.withDefault 0
+
+        condition_value =
+            registers
+                |> Dict.get instruction.condition_register
+                |> Maybe.withDefault 0
+
+        new_value =
+            if instruction.condition condition_value then
+                instruction.execute target_value
+            else
+                target_value
+
+        new_max =
+            Basics.max max_value new_value
+    in
+        registers
+            |> Dict.insert instruction.target_register new_value
+            |> (\r -> ( r, new_max ))
+
+
+parse_instruction : String -> Instruction
+parse_instruction line =
     case String.words line of
         [ target_register, delta_dir, delta_str, _, condition_register, condition_str, condition_value_str ] ->
             let

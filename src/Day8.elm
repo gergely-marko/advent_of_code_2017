@@ -100,7 +100,7 @@ create_instruction line =
                 condition_value =
                     condition_value_str |> String.toInt |> Result.withDefault 0
 
-                condition_f =
+                condition =
                     case condition_str of
                         ">" ->
                             flip (>) condition_value
@@ -123,16 +123,16 @@ create_instruction line =
                         _ ->
                             Debug.crash "unknown condition symbol"
 
-                execute_f =
+                execute =
                     if delta_dir == "inc" then
                         (+) delta_value
                     else
-                        (+) (-1 * delta_value)
+                        flip (-) delta_value
             in
                 { target_register = target_register
                 , condition_register = condition_register
-                , condition = condition_f
-                , execute = execute_f
+                , condition = condition
+                , execute = execute
                 }
 
         _ ->

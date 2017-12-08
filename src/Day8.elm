@@ -8,7 +8,7 @@ main : Html.Html msg
 main =
     let
         result =
-            execute instructions 0 registers
+            execute instructions
 
         max_value =
             result
@@ -29,103 +29,44 @@ main =
             ]
 
 
-type alias InstructionData =
-    { register : String
-    , inc_dir : String
-    , inc_val : Int
-    , target_register : String
-    , relation : String
-    , target_val : Int
+type alias Instruction =
+    { target_register : String
+    , condition_register : String
+    , condition : Int -> Bool
+    , execute : Int -> Int
     }
 
 
-init_new : InstructionData
-init_new =
-    { register = ""
-    , inc_dir = ""
-    , inc_val = 0
-    , target_register = ""
-    , relation = ""
-    , target_val = 0
-    }
+execute : List Instruction -> ( Dict String Int, Int )
+execute instructions =
+    instructions
+        |> List.foldl
+            (\i ( registers, max_value ) ->
+                let
+                    target_value =
+                        registers
+                            |> Dict.get i.target_register
+                            |> Maybe.withDefault 0
 
+                    condition_value =
+                        registers
+                            |> Dict.get i.condition_register
+                            |> Maybe.withDefault 0
 
-execute : List InstructionData -> Int -> Dict String Int -> ( Dict String Int, Int )
-execute instructions max_value registers =
-    case instructions of
-        [] ->
-            ( registers, max_value )
+                    new_value =
+                        if i.condition condition_value then
+                            i.execute target_value
+                        else
+                            target_value
 
-        i :: tail ->
-            let
-                relation_value =
+                    new_max =
+                        Basics.max max_value new_value
+                in
                     registers
-                        |> Dict.get i.target_register
-                        |> Maybe.withDefault 0
-
-                current_value =
-                    registers
-                        |> Dict.get i.register
-                        |> Maybe.withDefault 0
-
-                delta =
-                    case i.inc_dir of
-                        "inc" ->
-                            i.inc_val
-
-                        "dec" ->
-                            -i.inc_val
-
-                        _ ->
-                            Debug.crash "inc/dec"
-
-                new_max =
-                    Basics.max max_value new_value
-
-                new_value =
-                    case i.relation of
-                        ">" ->
-                            if relation_value > i.target_val then
-                                current_value + delta
-                            else
-                                current_value
-
-                        "<" ->
-                            if relation_value < i.target_val then
-                                current_value + delta
-                            else
-                                current_value
-
-                        "==" ->
-                            if relation_value == i.target_val then
-                                current_value + delta
-                            else
-                                current_value
-
-                        ">=" ->
-                            if relation_value >= i.target_val then
-                                current_value + delta
-                            else
-                                current_value
-
-                        "<=" ->
-                            if relation_value <= i.target_val then
-                                current_value + delta
-                            else
-                                current_value
-
-                        "!=" ->
-                            if relation_value /= i.target_val then
-                                current_value + delta
-                            else
-                                current_value
-
-                        _ ->
-                            Debug.crash "< > == etc"
-            in
-                registers
-                    |> Dict.insert i.register new_value
-                    |> execute tail new_max
+                        |> Dict.insert i.target_register new_value
+                        |> (\r -> ( r, new_max ))
+            )
+            ( registers, 0 )
 
 
 registers : Dict String Int
@@ -133,7 +74,7 @@ registers =
     iterate_instructions instructions Dict.empty
 
 
-iterate_instructions : List InstructionData -> Dict String Int -> Dict String Int
+iterate_instructions : List Instruction -> Dict String Int -> Dict String Int
 iterate_instructions instructions acc =
     case instructions of
         [] ->
@@ -141,12 +82,12 @@ iterate_instructions instructions acc =
 
         i :: tail ->
             acc
-                |> Dict.insert i.register 0
                 |> Dict.insert i.target_register 0
+                |> Dict.insert i.condition_register 0
                 |> iterate_instructions tail
 
 
-instructions : List InstructionData
+instructions : List Instruction
 instructions =
     input
         |> String.lines
@@ -154,42 +95,54 @@ instructions =
         |> List.map create_instruction
 
 
-create_instruction : String -> InstructionData
+create_instruction : String -> Instruction
 create_instruction line =
-    line
-        |> String.split " "
-        |> List.filter (\w -> w /= "if")
-        |> iterate_words 0 init_new
+    case String.words line of
+        [ target_register, delta_dir, delta_str, _, condition_register, condition_str, condition_value_str ] ->
+            let
+                delta_value =
+                    delta_str |> String.toInt |> Result.withDefault 0
 
+                condition_value =
+                    condition_value_str |> String.toInt |> Result.withDefault 0
 
-iterate_words : Int -> InstructionData -> List String -> InstructionData
-iterate_words index instruction words =
-    case words of
-        [] ->
-            instruction
+                condition_f =
+                    case condition_str of
+                        ">" ->
+                            flip (>) condition_value
 
-        w :: tail ->
-            case index of
-                0 ->
-                    iterate_words 1 { instruction | register = w } tail
+                        "<" ->
+                            flip (<) condition_value
 
-                1 ->
-                    iterate_words 2 { instruction | inc_dir = w } tail
+                        ">=" ->
+                            flip (>=) condition_value
 
-                2 ->
-                    iterate_words 3 { instruction | inc_val = w |> String.toInt |> Result.withDefault 0 } tail
+                        "<=" ->
+                            flip (<=) condition_value
 
-                3 ->
-                    iterate_words 4 { instruction | target_register = w } tail
+                        "==" ->
+                            (==) condition_value
 
-                4 ->
-                    iterate_words 5 { instruction | relation = w } tail
+                        "!=" ->
+                            (/=) condition_value
 
-                5 ->
-                    iterate_words 6 { instruction | target_val = w |> String.toInt |> Result.withDefault 0 } tail
+                        _ ->
+                            Debug.crash "unknown condition symbol"
 
-                _ ->
-                    instruction
+                execute_f =
+                    if delta_dir == "inc" then
+                        (+) delta_value
+                    else
+                        (+) (-1 * delta_value)
+            in
+                { target_register = target_register
+                , condition_register = condition_register
+                , condition = condition_f
+                , execute = execute_f
+                }
+
+        _ ->
+            Debug.crash "line parsing failed"
 
 
 test_input =

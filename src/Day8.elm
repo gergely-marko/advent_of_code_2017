@@ -71,20 +71,14 @@ execute instructions =
 
 registers : Dict String Int
 registers =
-    iterate_instructions instructions Dict.empty
-
-
-iterate_instructions : List Instruction -> Dict String Int -> Dict String Int
-iterate_instructions instructions acc =
-    case instructions of
-        [] ->
-            acc
-
-        i :: tail ->
-            acc
-                |> Dict.insert i.target_register 0
-                |> Dict.insert i.condition_register 0
-                |> iterate_instructions tail
+    instructions
+        |> List.foldl
+            (\i registers ->
+                registers
+                    |> Dict.insert i.target_register 0
+                    |> Dict.insert i.condition_register 0
+            )
+            Dict.empty
 
 
 instructions : List Instruction

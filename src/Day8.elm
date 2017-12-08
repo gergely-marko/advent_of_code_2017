@@ -66,19 +66,7 @@ execute instructions =
                         |> Dict.insert i.target_register new_value
                         |> (\r -> ( r, new_max ))
             )
-            ( registers, 0 )
-
-
-registers : Dict String Int
-registers =
-    instructions
-        |> List.foldl
-            (\i registers ->
-                registers
-                    |> Dict.insert i.target_register 0
-                    |> Dict.insert i.condition_register 0
-            )
-            Dict.empty
+            ( Dict.empty, 0 )
 
 
 instructions : List Instruction

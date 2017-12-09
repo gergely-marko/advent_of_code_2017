@@ -8,7 +8,7 @@ main : Html msg
 main =
     stream
         |> String.toList
-        |> (\s -> next_group s (init_group 0))
+        |> next_group (init_group 0)
         |> (\( group, tail ) -> render_group group)
 
 
@@ -51,8 +51,8 @@ init_group level =
     Group (GroupData False False [] [] level 0)
 
 
-next_group : List Char -> Group -> ( Group, List Char )
-next_group stream (Group group) =
+next_group : Group -> List Char -> ( Group, List Char )
+next_group (Group group) stream =
     case stream of
         [] ->
             ( Group group, [] )
@@ -60,51 +60,51 @@ next_group stream (Group group) =
         c :: tail ->
             if group.garbage then
                 if group.skip then
-                    next_group tail (Group { group | skip = False })
+                    next_group (Group { group | skip = False }) tail
                 else
                     case c of
                         '>' ->
-                            next_group tail (Group { group | garbage = False, content = group.content ++ [ c ] })
+                            next_group (Group { group | garbage = False, content = group.content ++ [ c ] }) tail
 
                         '!' ->
-                            next_group tail (Group { group | skip = True })
+                            next_group (Group { group | skip = True }) tail
 
                         char ->
                             next_group
-                                tail
                                 (Group
                                     { group
                                         | content = group.content ++ [ char ]
                                         , garbage_size = group.garbage_size + 1
                                     }
                                 )
+                                tail
             else
                 case c of
                     '{' ->
                         let
                             ( new_group, new_tail ) =
-                                next_group tail (init_group (group.level + 1))
+                                next_group (init_group (group.level + 1)) tail
                         in
-                            (next_group new_tail (Group { group | groups = group.groups ++ [ new_group ] }))
+                            (next_group (Group { group | groups = group.groups ++ [ new_group ] }) new_tail)
 
                     '}' ->
                         ( Group group, tail )
 
                     ',' ->
-                        next_group tail (Group group)
+                        next_group (Group group) tail
 
                     '<' ->
-                        next_group tail (Group { group | garbage = True, content = group.content ++ [ c ] })
+                        next_group (Group { group | garbage = True, content = group.content ++ [ c ] }) tail
 
                     char ->
-                        next_group tail (Group { group | content = group.content ++ [ char ] })
+                        next_group (Group { group | content = group.content ++ [ char ] }) tail
 
 
 debug : Int
 debug =
     stream
         |> String.toList
-        |> (\s -> next_group s (init_group 0))
+        |> next_group (init_group 0)
         |> (\( group, tail ) ->
                 let
                     dbg_levels =

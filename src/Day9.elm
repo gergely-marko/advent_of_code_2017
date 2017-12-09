@@ -64,20 +64,13 @@ next_group (Group group) stream =
                 else
                     case c of
                         '>' ->
-                            next_group (Group { group | garbage = False, content = group.content ++ [ c ] }) tail
+                            next_group (Group { group | garbage = False }) tail
 
                         '!' ->
                             next_group (Group { group | skip = True }) tail
 
                         char ->
-                            next_group
-                                (Group
-                                    { group
-                                        | content = group.content ++ [ char ]
-                                        , garbage_size = group.garbage_size + 1
-                                    }
-                                )
-                                tail
+                            next_group (Group { group | garbage_size = group.garbage_size + 1 }) tail
             else
                 case c of
                     '{' ->
@@ -94,7 +87,7 @@ next_group (Group group) stream =
                         next_group (Group group) tail
 
                     '<' ->
-                        next_group (Group { group | garbage = True, content = group.content ++ [ c ] }) tail
+                        next_group (Group { group | garbage = True }) tail
 
                     char ->
                         next_group (Group { group | content = group.content ++ [ char ] }) tail

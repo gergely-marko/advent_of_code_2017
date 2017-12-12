@@ -74,11 +74,25 @@ filter_groups programs acc =
 
         p :: tail ->
             tail
-                |> List.filter (\q -> Set.intersect p q |> Set.size |> flip (>) 0)
-                |> List.length
-                |> (\l ->
-                        if l == 0 then
+                |> find (\q -> Set.intersect p q |> Set.size |> (/=) 0)
+                |> Maybe.map (\_ -> False)
+                |> Maybe.withDefault True
+                |> (\unique ->
+                        if unique then
                             filter_groups tail ((Debug.log "p" p) :: acc)
                         else
                             filter_groups tail acc
                    )
+
+
+find : (a -> Bool) -> List a -> Maybe a
+find f list =
+    case list of
+        [] ->
+            Nothing
+
+        a :: tail ->
+            if f a then
+                Just a
+            else
+                find f tail

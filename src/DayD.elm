@@ -111,24 +111,15 @@ init_layer depth =
 
 step_layers : Dict Int Layer -> Dict Int Layer
 step_layers layers =
-    step_layers_helper layers layer_keys
+    List.foldl step_layers_helper layers layer_keys
 
 
-step_layers_helper : Dict Int Layer -> List Int -> Dict Int Layer
-step_layers_helper layers keys =
-    case keys of
-        [] ->
-            layers
-
-        k :: tail ->
-            case Dict.get k layers of
-                Nothing ->
-                    Debug.crash "bad key"
-
-                Just layer ->
-                    step_layers_helper
-                        (Dict.insert k (step_layer layer) layers)
-                        tail
+step_layers_helper : Int -> Dict Int Layer -> Dict Int Layer
+step_layers_helper key layers =
+    layers
+        |> Dict.get key
+        |> Maybe.map (\layer -> Dict.insert key (step_layer layer) layers)
+        |> Maybe.withDefault layers
 
 
 step_layer : Layer -> Layer

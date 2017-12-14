@@ -6,6 +6,7 @@ import Array.Hamt as Array exposing (Array)
 import Bitwise
 import Char
 import Hex
+import Matrix exposing (Matrix)
 
 
 main : Html msg
@@ -13,80 +14,140 @@ main =
     let
         part_1 =
             "flqrgnkx"
-                |> input_to_array
-                |> count_used_squares
-                |> toString
 
+        -- |> input_to_array
+        -- |> count_used_squares
+        -- |> toString
         part_2 =
-            "part2"
+            "flqrgnkx"
+                |> input_to_array
+                |> strings_to_matrix
+                |> process_cell 0 0 1
+                |> max_value
+                |> toString
     in
         Html.text <| part_1 ++ " / " ++ part_2
 
 
-process_line : Int -> Int -> Array (Array (Maybe Int)) -> Array (Array (Maybe Int))
-process_line row col acc =
+process_cell : Int -> Int -> Int -> Matrix (Maybe Int) -> Matrix (Maybe Int)
+process_cell row col block_id memory =
     if row > 127 then
-        acc
+        memory
     else if col > 127 then
-        process_line (row + 1) 0 acc
+        process_cell (row + 1) 0 block_id memory
     else
-        let
-            this_row =
-                acc |> Array.get row
+        case Matrix.get ( row, col ) memory |> Maybe.andThen identity of
+            Just 0 ->
+                let
+                    top =
+                        memory
+                            |> Matrix.get ( row - 1, col )
+                            |> Maybe.andThen identity
+                            |> Maybe.andThen
+                                (\x ->
+                                    if x == 0 then
+                                        Nothing
+                                    else
+                                        Just x
+                                )
 
-            prew_row =
-                acc |> Array.get (row - 1)
+                    left =
+                        memory
+                            |> Matrix.get ( row, col - 1 )
+                            |> Maybe.andThen identity
+                            |> Maybe.andThen
+                                (\x ->
+                                    if x == 0 then
+                                        Nothing
+                                    else
+                                        Just x
+                                )
 
-            next_row =
-                acc |> Array.get (row + 1)
+                    right =
+                        memory
+                            |> Matrix.get ( row, col + 1 )
+                            |> Maybe.andThen identity
+                            |> Maybe.andThen
+                                (\x ->
+                                    if x == 0 then
+                                        Nothing
+                                    else
+                                        Just x
+                                )
 
-            top =
-                prew_row |> Maybe.andThen (Array.get col)
+                    bottom =
+                        memory
+                            |> Matrix.get ( row + 1, col )
+                            |> Maybe.andThen identity
+                            |> Maybe.andThen
+                                (\x ->
+                                    if x == 0 then
+                                        Nothing
+                                    else
+                                        Just x
+                                )
+                in
+                    case top of
+                        Nothing ->
+                            case left of
+                                Nothing ->
+                                    case right of
+                                        Nothing ->
+                                            case bottom of
+                                                Nothing ->
+                                                    process_cell row (col + 1) (block_id + 1) (fill_adjacent_blocks row col block_id memory)
 
-            left =
-                this_row |> Maybe.andThen (Array.get (col - 1))
+                                                Just x ->
+                                                    process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
 
-            right =
-                this_row |> Maybe.andThen (Array.get (col + 1))
+                                        Just x ->
+                                            process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
 
-            this =
-                this_row |> Maybe.andThen (Array.get col) |> Maybe.andThen identity
-        in
-            case this of
-                Nothing ->
-                    process_line row (col + 1) acc
+                                Just x ->
+                                    process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
 
-                Just 0 ->
-                    acc
+                        Just x ->
+                            process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
 
-                Just x ->
-                    process_line row (col + 1) (fill_adjacent_blocks row col x acc)
+            Just x ->
+                process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
+
+            Nothing ->
+                process_cell row (col + 1) block_id memory
 
 
-fill_adjacent_blocks : Int -> Int -> Int -> Array (Array (Maybe Int)) -> Array (Array (Maybe Int))
+fill_adjacent_blocks : Int -> Int -> Int -> Matrix (Maybe Int) -> Matrix (Maybe Int)
 fill_adjacent_blocks row col x memory =
-    let
-        this_row =
-            memory |> Array.get row
-
-        prew_row =
-            memory |> Array.get (row - 1)
-
-        next_row =
-            memory |> Array.get (row + 1)
-
-        top =
-            prew_row |> Maybe.andThen (Array.get col)
-
-        left =
-            this_row |> Maybe.andThen (Array.get (col - 1))
-
-        right =
-            this_row |> Maybe.andThen (Array.get (col + 1))
-
-        new_prew_row =
-            Maybe.map2
-    in
+    memory
+        |> Matrix.set ( row, col ) (Just x)
+        |> (\memory ->
+                memory
+                    |> Matrix.get ( row - 1, col )
+                    |> Maybe.andThen identity
+                    |> Maybe.map (\_ -> Matrix.set ( row - 1, col ) (Just x) memory)
+                    |> Maybe.withDefault memory
+           )
+        |> (\memory ->
+                memory
+                    |> Matrix.get ( row, col - 1 )
+                    |> Maybe.andThen identity
+                    |> Maybe.map (\_ -> Matrix.set ( row, col - 1 ) (Just x) memory)
+                    |> Maybe.withDefault memory
+           )
+        |> (\memory ->
+                memory
+                    |> Matrix.get ( row, col + 1 )
+                    |> Maybe.andThen identity
+                    |> Maybe.map (\_ -> Matrix.set ( row, col + 1 ) (Just x) memory)
+                    |> Maybe.withDefault memory
+           )
+        |> (\memory ->
+                memory
+                    |> Matrix.get ( row + 1, col )
+                    |> Maybe.andThen identity
+                    |> Maybe.map (\_ -> Matrix.set ( row + 1, col ) (Just x) memory)
+                    |> Maybe.withDefault memory
+           )
 
 
 count_used_squares : List String -> Int
@@ -124,6 +185,38 @@ input_to_array_helper input index =
         |> String.toList
         |> List.map char_to_bits
         |> String.concat
+
+
+strings_to_matrix : List String -> Matrix (Maybe Int)
+strings_to_matrix input =
+    input
+        |> List.map
+            (\line ->
+                line
+                    |> String.toList
+                    |> List.map
+                        (\c ->
+                            case c of
+                                '0' ->
+                                    Nothing
+
+                                '1' ->
+                                    Just 0
+
+                                _ ->
+                                    Debug.crash "strings_to_array"
+                        )
+            )
+        |> Matrix.fromList
+
+
+max_value : Matrix (Maybe Int) -> Int
+max_value matrix =
+    matrix
+        |> Matrix.flatten
+        |> List.filterMap identity
+        |> List.maximum
+        |> Maybe.withDefault 0
 
 
 char_to_bits : Char -> String

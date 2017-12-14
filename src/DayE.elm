@@ -13,13 +13,13 @@ main : Html msg
 main =
     let
         part_1 =
-            "flqrgnkx"
+            "oundnydw"
+                |> input_to_array
+                |> count_used_squares
+                |> toString
 
-        -- |> input_to_array
-        -- |> count_used_squares
-        -- |> toString
         part_2 =
-            "flqrgnkx"
+            "oundnydw"
                 |> input_to_array
                 |> strings_to_matrix
                 |> process_cell 0 0 1
@@ -38,114 +38,73 @@ process_cell row col block_id memory =
     else
         case Matrix.get ( row, col ) memory |> Maybe.andThen identity of
             Just 0 ->
-                let
-                    top =
-                        memory
-                            |> Matrix.get ( row - 1, col )
-                            |> Maybe.andThen identity
-                            |> Maybe.andThen
-                                (\x ->
-                                    if x == 0 then
-                                        Nothing
-                                    else
-                                        Just x
-                                )
+                memory
+                    |> Matrix.set ( row, col ) (Just block_id)
+                    |> fill_adjacent_cells row col block_id
+                    |> process_cell row (col + 1) (block_id + 1)
 
-                    left =
-                        memory
-                            |> Matrix.get ( row, col - 1 )
-                            |> Maybe.andThen identity
-                            |> Maybe.andThen
-                                (\x ->
-                                    if x == 0 then
-                                        Nothing
-                                    else
-                                        Just x
-                                )
-
-                    right =
-                        memory
-                            |> Matrix.get ( row, col + 1 )
-                            |> Maybe.andThen identity
-                            |> Maybe.andThen
-                                (\x ->
-                                    if x == 0 then
-                                        Nothing
-                                    else
-                                        Just x
-                                )
-
-                    bottom =
-                        memory
-                            |> Matrix.get ( row + 1, col )
-                            |> Maybe.andThen identity
-                            |> Maybe.andThen
-                                (\x ->
-                                    if x == 0 then
-                                        Nothing
-                                    else
-                                        Just x
-                                )
-                in
-                    case top of
-                        Nothing ->
-                            case left of
-                                Nothing ->
-                                    case right of
-                                        Nothing ->
-                                            case bottom of
-                                                Nothing ->
-                                                    process_cell row (col + 1) (block_id + 1) (fill_adjacent_blocks row col block_id memory)
-
-                                                Just x ->
-                                                    process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
-
-                                        Just x ->
-                                            process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
-
-                                Just x ->
-                                    process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
-
-                        Just x ->
-                            process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
-
-            Just x ->
-                process_cell row (col + 1) block_id (fill_adjacent_blocks row col x memory)
-
-            Nothing ->
+            _ ->
                 process_cell row (col + 1) block_id memory
 
 
-fill_adjacent_blocks : Int -> Int -> Int -> Matrix (Maybe Int) -> Matrix (Maybe Int)
-fill_adjacent_blocks row col x memory =
+fill_adjacent_cells : Int -> Int -> Int -> Matrix (Maybe Int) -> Matrix (Maybe Int)
+fill_adjacent_cells row col block_id memory =
     memory
-        |> Matrix.set ( row, col ) (Just x)
+        |> Matrix.set ( row, col ) (Just block_id)
         |> (\memory ->
                 memory
                     |> Matrix.get ( row - 1, col )
-                    |> Maybe.andThen identity
-                    |> Maybe.map (\_ -> Matrix.set ( row - 1, col ) (Just x) memory)
+                    |> Maybe.andThen
+                        (\m_x ->
+                            case m_x of
+                                Just 0 ->
+                                    Just <| fill_adjacent_cells (row - 1) col block_id memory
+
+                                _ ->
+                                    Nothing
+                        )
                     |> Maybe.withDefault memory
            )
         |> (\memory ->
                 memory
                     |> Matrix.get ( row, col - 1 )
-                    |> Maybe.andThen identity
-                    |> Maybe.map (\_ -> Matrix.set ( row, col - 1 ) (Just x) memory)
+                    |> Maybe.andThen
+                        (\m_x ->
+                            case m_x of
+                                Just 0 ->
+                                    Just <| fill_adjacent_cells row (col - 1) block_id memory
+
+                                _ ->
+                                    Nothing
+                        )
                     |> Maybe.withDefault memory
            )
         |> (\memory ->
                 memory
                     |> Matrix.get ( row, col + 1 )
-                    |> Maybe.andThen identity
-                    |> Maybe.map (\_ -> Matrix.set ( row, col + 1 ) (Just x) memory)
+                    |> Maybe.andThen
+                        (\m_x ->
+                            case m_x of
+                                Just 0 ->
+                                    Just <| fill_adjacent_cells row (col + 1) block_id memory
+
+                                _ ->
+                                    Nothing
+                        )
                     |> Maybe.withDefault memory
            )
         |> (\memory ->
                 memory
                     |> Matrix.get ( row + 1, col )
-                    |> Maybe.andThen identity
-                    |> Maybe.map (\_ -> Matrix.set ( row + 1, col ) (Just x) memory)
+                    |> Maybe.andThen
+                        (\m_x ->
+                            case m_x of
+                                Just 0 ->
+                                    Just <| fill_adjacent_cells (row + 1) col block_id memory
+
+                                _ ->
+                                    Nothing
+                        )
                     |> Maybe.withDefault memory
            )
 

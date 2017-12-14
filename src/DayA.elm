@@ -1,4 +1,4 @@
-module DayA exposing (main)
+module DayA exposing (main, knot_hash)
 
 import DayAStream exposing (..)
 import Html exposing (Html)
@@ -31,6 +31,24 @@ dbg_1 =
                 |> Debug.log "result"
     in
         0
+
+
+empty_array : Array Int
+empty_array =
+    List.range 0 255 |> Array.fromList
+
+
+knot_hash : String -> String
+knot_hash text =
+    text
+        |> String.toList
+        |> List.map Char.toCode
+        |> (\l -> l ++ [ 17, 31, 73, 47, 23 ])
+        |> (\l -> run 64 l ( 0, 0, empty_array ))
+        |> Array.toList
+        |> (\l -> sparse_hash (l) [])
+        |> List.map (Hex.toString >> (String.padLeft 2 '0'))
+        |> String.concat
 
 
 sparse_hash : List Int -> List Int -> List Int

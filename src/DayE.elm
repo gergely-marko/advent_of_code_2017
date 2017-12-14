@@ -2,10 +2,6 @@ module DayE exposing (main)
 
 import DayA exposing (knot_hash)
 import Html exposing (Html)
-import Array.Hamt as Array exposing (Array)
-import Bitwise
-import Char
-import Hex
 import Matrix exposing (Matrix)
 
 

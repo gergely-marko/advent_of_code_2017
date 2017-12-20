@@ -24,31 +24,6 @@ distance ( px, py, pz ) =
     abs px + abs py + abs pz
 
 
-parse : List Particle
-parse =
-    input
-        |> String.lines
-        |> List.filter (\l -> String.length l > 0)
-        |> List.map String.words
-        |> List.indexedMap (,)
-        |> List.map parse_words
-
-
-step_while_in : List Particle -> List Particle
-step_while_in particles =
-    let
-        all_out =
-            particles
-                |> List.all (\p -> p.phase == Out)
-    in
-    if all_out then
-        particles
-    else
-        particles
-            |> List.map step_particle
-            |> step_while_in
-
-
 brute_force : Int
 brute_force =
     run_for parse 0
@@ -146,17 +121,21 @@ step_particle particle =
 
         ( px_, py_, pz_ ) =
             ( px + vx_, py + vy_, pz + vz_ )
-
-        dist =
-            distance particle.p
-
-        dist_ =
-            distance ( px_, py_, pz_ )
     in
     { particle
         | p = ( px_, py_, pz_ )
         , v = ( vx_, vy_, vz_ )
     }
+
+
+parse : List Particle
+parse =
+    input
+        |> String.lines
+        |> List.filter (\l -> String.length l > 0)
+        |> List.map String.words
+        |> List.indexedMap (,)
+        |> List.map parse_words
 
 
 parse_words : ( Int, List String ) -> Particle

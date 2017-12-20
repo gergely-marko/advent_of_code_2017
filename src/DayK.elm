@@ -11,36 +11,12 @@ main =
     Html.text "Check console!"
 
 
-type Phase
-    = In
-    | Out
-
-
 type alias Particle =
     { id : Int
     , p : ( Int, Int, Int )
     , v : ( Int, Int, Int )
     , a : ( Int, Int, Int )
-    , phase : Phase
     }
-
-
-starting_phase : ( Int, Int, Int ) -> ( Int, Int, Int ) -> ( Int, Int, Int ) -> Phase
-starting_phase (( px, py, pz ) as p) (( vx, vy, vz ) as v) (( ax, ay, az ) as a) =
-    let
-        dist_0 =
-            distance p
-
-        pos_1 =
-            ( px + vx + ax, py + vy + ay, pz + vz + az )
-
-        dist_1 =
-            distance pos_1
-    in
-    if dist_0 > dist_1 then
-        In
-    else
-        Out
 
 
 distance : ( Int, Int, Int ) -> Int
@@ -201,7 +177,6 @@ parse_words ( id, words ) =
             , p = p
             , v = v
             , a = a
-            , phase = In --starting_phase p v a
             }
 
         _ ->

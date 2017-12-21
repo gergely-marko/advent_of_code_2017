@@ -32,6 +32,30 @@ main =
     Html.text <| part_1 ++ " / " ++ part_2
 
 
+type Square
+    = Size2 M2
+    | Size3 M3
+    | Size4 M4
+
+
+type alias M2 =
+    ( ( Char, Char ), ( Char, Char ) )
+
+
+type alias M3 =
+    ( ( Char, Char, Char ), ( Char, Char, Char ), ( Char, Char, Char ) )
+
+
+type alias M4 =
+    ( ( Char, Char, Char, Char ), ( Char, Char, Char, Char ), ( Char, Char, Char, Char ), ( Char, Char, Char, Char ) )
+
+
+type alias Pattern =
+    { from : Square
+    , to : Square
+    }
+
+
 pixels_on : Matrix Square -> Int
 pixels_on image =
     image
@@ -162,6 +186,20 @@ explode3 image =
     explode3_helper image ( 0, 0 ) new_image
 
 
+explode3_helper : Matrix Square -> ( Int, Int ) -> Matrix Square -> Matrix Square
+explode3_helper source (( row, col ) as location) image =
+    let
+        size =
+            Matrix.colCount source
+    in
+    if row >= size then
+        image
+    else if col >= size then
+        explode3_helper source ( row + 2, 0 ) image
+    else
+        explode3_helper source ( row, col + 2 ) (fill3 source location image)
+
+
 
 {-
    a00 b00 c00 | a01 b01 c01      a00 b00 | c00 a01 | b01 c01
@@ -213,20 +251,6 @@ fill3 source (( row, col ) as location) image =
             Debug.crash "this image can not be exploded"
 
 
-explode3_helper : Matrix Square -> ( Int, Int ) -> Matrix Square -> Matrix Square
-explode3_helper source (( row, col ) as location) image =
-    let
-        size =
-            Matrix.colCount source
-    in
-    if row >= size then
-        image
-    else if col >= size then
-        explode3_helper source ( row + 2, 0 ) image
-    else
-        explode3_helper source ( row, col + 2 ) (fill3 source location image)
-
-
 explode : Matrix Square -> Matrix Square
 explode image =
     let
@@ -253,15 +277,16 @@ explode_helper source (( row, col ) as location) image =
         explode_helper source ( row, col + 1 ) (fill source location image)
 
 
-{-|
 
-    a b | c d
-    e f | g h
-    ----+----
-    i j | k l
-    m n | o p
-
+{-
+   a b | c d
+   e f | g h
+   ----+----
+   i j | k l
+   m n | o p
 -}
+
+
 fill : Matrix Square -> ( Int, Int ) -> Matrix Square -> Matrix Square
 fill source (( row, col ) as location) image =
     let
@@ -340,75 +365,6 @@ find_pattern_helper count from to square =
                 Nothing
 
 
-try_all_patterns : List Pattern -> Square -> Maybe Square
-try_all_patterns patterns square =
-    case patterns of
-        [] ->
-            Nothing
-
-        p :: tail ->
-            if p.from == square then
-                Just p.to
-            else
-                try_all_patterns tail square
-
-
-find_pattern_old : List Pattern -> Square -> Square
-find_pattern_old patterns square =
-    case patterns of
-        [] ->
-            Debug.crash "pattern not found"
-
-        pattern :: tail ->
-            if match 0 pattern.from square then
-                pattern.to
-            else
-                find_pattern tail square
-
-
-type alias Pattern =
-    { from : Square
-    , to : Square
-    }
-
-
-type Square
-    = Size2 M2
-    | Size3 M3
-    | Size4 M4
-
-
-match : Int -> Square -> Square -> Bool
-match transform_count rule square =
-    if square == rule then
-        True
-    else
-        case transform_count of
-            0 ->
-                match 1 rule (rotate square)
-
-            1 ->
-                match 2 rule (rotate square)
-
-            2 ->
-                match 3 rule (rotate square)
-
-            3 ->
-                match 4 rule (square |> rotate |> flip)
-
-            4 ->
-                match 5 rule (rotate square)
-
-            5 ->
-                match 6 rule (rotate square)
-
-            6 ->
-                match 7 rule (rotate square)
-
-            _ ->
-                False
-
-
 flip : Square -> Square
 flip p =
     case p of
@@ -433,18 +389,6 @@ rotate p =
 
         _ ->
             Debug.crash "rotate"
-
-
-type alias M2 =
-    ( ( Char, Char ), ( Char, Char ) )
-
-
-type alias M3 =
-    ( ( Char, Char, Char ), ( Char, Char, Char ), ( Char, Char, Char ) )
-
-
-type alias M4 =
-    ( ( Char, Char, Char, Char ), ( Char, Char, Char, Char ), ( Char, Char, Char, Char ), ( Char, Char, Char, Char ) )
 
 
 
